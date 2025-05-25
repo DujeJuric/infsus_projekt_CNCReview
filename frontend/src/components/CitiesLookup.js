@@ -7,10 +7,10 @@ const Cities = () => {
     const [editedName, setEditedName] = useState("");
     const [addCity, setAddCity] = useState(false);
     const [newName, setNewName] = useState("");
+    const [valMessage, setValMessage] = useState(false);
 
-    // promijeniti path
     const handleDelete = (id) => {
-        fetch(`http://localhost:5000/deleteCity/${id}`, {
+        fetch(`http://localhost:8000/grad/deleteGrad/${id}`, {
             method: 'DELETE'
         }).then(res => {
             if (!res.ok) {
@@ -27,9 +27,15 @@ const Cities = () => {
         setEditedName(name);
     }
 
-    // promijeniti path
     const handleEditSave = (id) => {
-        fetch(`http://localhost:5000/updateCity/${id}`, {
+        const cityExists = cities.some(city => city.naziv === editedName);
+        if (cityExists) {
+            console.log('Naziv grada već postoji!');
+            setValMessage(true);
+            return;
+        }
+
+        fetch(`http://localhost:8000/grad/editGrad/${id}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ naziv: editedName })
@@ -46,9 +52,14 @@ const Cities = () => {
         setAddCity(true);
     }
 
-    // promijeniti path
     const handleAddSave = () => {
-        fetch(`http://localhost:5000/addCity`, {
+        const cityExists = cities.some(city => city.naziv === newName);
+        if (cityExists) {
+            console.log('Naziv grada već postoji!');
+            setValMessage(true);
+            return;
+        }
+        fetch(`http://localhost:8000/grad/createGrad`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ naziv: newName })
@@ -78,8 +89,11 @@ const Cities = () => {
                             <td>{city.grad_id}</td>
                             <td>
                                 {editCityId === city.grad_id ? (
-                                <input type="text" value={editedName} onChange={(e) => setEditedName(e.target.value)} required />
-                            ) : (city.naziv)}
+                                    <input type="text" value={editedName} onChange={(e) => {
+                                        setEditedName(e.target.value);
+                                        setValMessage(false);
+                                    }} required />
+                                ) : (city.naziv)}
                             </td>
                             <td>
                                 {editCityId === city.grad_id ? (
@@ -98,7 +112,10 @@ const Cities = () => {
                                 <input
                                     type="text"
                                     value={newName}
-                                    onChange={(e) => setNewName(e.target.value)}
+                                    onChange={(e) => {
+                                        setNewName(e.target.value);
+                                        setValMessage(false);
+                                    }}
                                     placeholder="Naziv grada"
                                 />
                             </td>
@@ -110,7 +127,8 @@ const Cities = () => {
                     )}
                 </tbody>
             </table>
-           {!addCity && <button className="button-ct" onClick={handleAdd}>Dodaj novi grad</button>}
+            {!addCity && <button className="button-ct" onClick={handleAdd}>Dodaj novi grad</button>}
+            {valMessage && <p>Već postoji grad s tim nazivom!</p>}
         </div>
     );
 }

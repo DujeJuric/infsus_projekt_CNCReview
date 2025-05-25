@@ -5,9 +5,8 @@ const Properties = () => {
     const [properties, setProperties] = useState([]);
     const location = useLocation();
 
-    // promijeniti path
     useEffect(() => {
-        fetch('http://localhost:5000/getProperties')
+        fetch('http://localhost:8000/objekt/getAllObjekt')
         .then(res => res.json())
         .then(data => {
             console.log(data);

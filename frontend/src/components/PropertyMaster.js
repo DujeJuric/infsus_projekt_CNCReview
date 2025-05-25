@@ -17,6 +17,7 @@ const Property = () => {
     const [phoneNumber, setPhoneNumber] = useState("");
     const [workingHours, setWorkingHours] = useState("");
     const [workingDays, setWorkingDays] = useState("");
+    const [ownership, setOwnership] = useState("");
     const { cities } = useLookup();
     const [succUpdate, setSuccUpdate] = useState(null);
     const [succDelete, setSuccDelete] = useState(null);
@@ -33,7 +34,7 @@ const Property = () => {
         setSuccDelete(null);
         setSuccUpdate(null);
 
-        fetch(`http://localhost:5000/getProperties/${id}`)
+        fetch(`http://localhost:8000/objekt/getObjektById/${id}`)
             .then(res => res.json())
             .then(data => {
                 setProperty(data);
@@ -44,6 +45,7 @@ const Property = () => {
                 setWorkingHours(data.radno_vrijeme);
                 setWorkingDays(data.radni_dani);
                 setCity(data.grad_id);
+                setOwnership(data.vlasnistvo_id);
             }).catch(err => console.error(err));
 
 
@@ -62,10 +64,10 @@ const Property = () => {
     const handleSubmit = (e) => {
         e.preventDefault();
         setSuccUpdate(null);
-        const propertyData = { name, description, address, phoneNumber, workingDays, workingHours, city };
+        const propertyData = { naziv: name, opis: description, adresa: address, mobilni_broj: phoneNumber, radni_dani: workingDays, radno_vrijeme: workingHours, grad_id: city, vlasnistvo_id: ownership };
         console.log(propertyData);
 
-        fetch(`http://localhost:5000/changeProperty/${id}`, {
+        fetch(`http://localhost:8000/objekt/editObjekt/${id}`, {
             method: 'POST',
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(propertyData)
@@ -85,7 +87,7 @@ const Property = () => {
         const object_id = id;
         setSuccDelete(null);
 
-        fetch(`http://localhost:5000/delete/${object_id}`, {
+        fetch(`http://localhost:8000/objekt/deleteObjekt/${object_id}`, {
             method: 'DELETE'
         }).then(res => {
             if (!res.ok) {

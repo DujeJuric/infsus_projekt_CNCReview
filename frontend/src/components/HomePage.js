@@ -1,6 +1,6 @@
 const HomePage = () => {
     return (
-        <h1>Ovo je početna stranica!</h1>
+        <h1>Dobrodošli!</h1>
     );
 }
 

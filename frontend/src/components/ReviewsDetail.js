@@ -1,37 +1,52 @@
 import { useState, useEffect } from "react";
+import { useLookup } from "./LookupContext";
 
 const Reviews = ({ propertyId }) => {
     const [reviews, setReviews] = useState([]);
     const [editReviewId, setEditReviewId] = useState(null);
     const [editedTitle, setEditedTitle] = useState("");
     const [editedContent, setEditedContent] = useState("");
-    const [editedRating, setEditedRating] = useState(null);
-    //const [editedUser, setEditedUser] = useState("");
+    const [editedRating, setEditedRating] = useState("");
+    const [editedUser, setEditedUser] = useState("");
     const [addReview, setAddReview] = useState(false);
     const [newTitle, setNewTitle] = useState("");
     const [newContent, setNewContent] = useState("");
-    const [newRating, setNewRating] = useState(null);
+    const [newRating, setNewRating] = useState("");
     const [newUser, setNewUser] = useState("");
-
+    const [allUsers, setAllUsers] = useState([]);
+    const { ratings } = useLookup();
 
     useEffect(() => {
         if (!propertyId)
             return;
-        fetch(`http://localhost:5000/getReviews/${propertyId}`)
+        fetch(`http://localhost:8000/recenzija/getRecenzijeByObjekt/${propertyId}`)
             .then(res => res.json())
             .then(data => {
                 if (Array.isArray(data)) {
                     setReviews(data);
                 } else {
-                    setReviews([]); // nema recenzija ili došlo do greške
+                    setReviews([]);
                 }
                 console.log(data);
                 setAddReview(false);
             }).catch(err => console.error(err));
     }, [propertyId]);
 
+    useEffect(() => {
+        fetch(`http://localhost:8000/korisnik/getAllKorisnik`)
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) {
+                    setAllUsers(data);
+                } else {
+                    setAllUsers([]);
+                }
+                console.log(data);
+            }).catch(err => console.error(err));
+    }, []);
+
     const handleDelete = (id) => {
-        fetch(`http://localhost:5000/deleteRev/${id}`, {
+        fetch(`http://localhost:8000/recenzija/deleteRecenzija/${id}`, {
             method: 'DELETE'
         }).then(res => {
             if (!res.ok) {
@@ -42,18 +57,19 @@ const Reviews = ({ propertyId }) => {
         }).catch((err) => console.error('Greška!: ', err));
     }
 
-    const handleEdit = (id, title, rating, content) => {
+    const handleEdit = (id, title, rating, content, userId) => {
         setEditReviewId(id);
         setEditedTitle(title);
         setEditedRating(rating);
         setEditedContent(content);
+        setEditedUser(userId);
     }
 
     const handleEditSave = (id) => {
-        fetch(`http://localhost:5000/updateRev/${id}`, {
+        fetch(`http://localhost:8000/recenzija/updateRecenzija/${id}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ naslov: editedTitle, ocjena: editedRating, sadrzaj: editedContent })
+            body: JSON.stringify({ naslov: editedTitle, ocjena_id: editedRating, sadrzaj: editedContent, korisnik_id: editedUser, objekt_id: propertyId})
         }).then(res => {
             if (!res.ok) {
                 throw new Error("Neuspješno ažuriranje");
@@ -61,7 +77,7 @@ const Reviews = ({ propertyId }) => {
             setReviews(prev =>
                 prev.map(r =>
                     r.recenzija_id === id
-                        ? { ...r, naslov: editedTitle, ocjena: editedRating, sadrzaj: editedContent }
+                        ? { ...r, naslov: editedTitle, ocjena_id: editedRating, sadrzaj: editedContent }
                         : r
                 )
             );
@@ -74,10 +90,10 @@ const Reviews = ({ propertyId }) => {
     }
 
     const handleAddSave = () => {
-        fetch(`http://localhost:5000/addRev`, {
+        fetch(`http://localhost:8000/recenzija/createRecenzija`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ naslov: newTitle, ocjena: newRating, sadrzaj: newContent, korisnik: newUser, objekt_id: propertyId })
+            body: JSON.stringify({ naslov: newTitle, ocjena_id: newRating, sadrzaj: newContent, korisnik_id: newUser, objekt_id: propertyId })
         }).then(res => {
             if (!res.ok) throw new Error("Neuspješno dodavanje");
             return res.json();
@@ -90,6 +106,16 @@ const Reviews = ({ propertyId }) => {
             setNewUser("");
         }).catch(err => console.error('Greška!', err));
     }
+
+    const getOcjenaText = (id) => {
+        const found = ratings.find(r => r.ocjena_id === Number(id));
+        return found ? found.ocjena : id;
+    };
+
+    const getUser = (id) => {
+        const found = allUsers.find(u => u.korisnik_id === id);
+        return found ? `${found.ime} ${found.prezime}` : id;
+    };
 
     return (
         <div className="rev-detail-container">
@@ -118,31 +144,31 @@ const Reviews = ({ propertyId }) => {
                             <td>
                                 {editReviewId === review.recenzija_id ? (
                                     <select id="rating-select" value={editedRating} onChange={e => setEditedRating(e.target.value)}>
-                                        <option value="1">1</option>
-                                        <option value="2">2</option>
-                                        <option value="3">3</option>
-                                        <option value="4">4</option>
-                                        <option value="5">5</option>
+                                        <option value="">--Odaberi ocjenu--</option>
+                                        {ratings.map(rating => (
+                                            <option key={rating.ocjena_id} value={rating.ocjena_id}>{rating.ocjena}</option>
+                                        ))}
                                     </select>
-                                ) : (review.ocjena)}
+                                ) : (getOcjenaText(review.ocjena_id))}
                             </td>
                             <td>
                                 {editReviewId === review.recenzija_id ? (
                                     <input type="text" value={editedContent} onChange={(e) => setEditedContent(e.target.value)} required />
                                 ) : (review.sadrzaj)}
                             </td>
-                            <td>{review.korisnik}</td>
+                            <td>
+                                {editReviewId === review.recenzija_id ? (getUser(editedUser)) : (getUser(review.korisnik_id))}
+                            </td>
                             <td>
                                 {editReviewId === review.recenzija_id ? (
                                     <button className="save-button-rd" onClick={() => handleEditSave(review.recenzija_id)}>Spremi</button>
                                 ) : (
-                                    <button className="edit-button-rd" onClick={() => handleEdit(review.recenzija_id, review.naslov, review.ocjena, review.sadrzaj)}>Uredi</button>
+                                    <button className="edit-button-rd" onClick={() => handleEdit(review.recenzija_id, review.naslov, review.ocjena, review.sadrzaj, review.korisnik_id)}>Uredi</button>
                                 )}
                             </td>
                             <td><button className="delete-button-rd" onClick={() => handleDelete(review.recenzija_id)}>Obriši</button></td>
                         </tr>
                     ))}
-                    {/* ovo mi baš nema smisla... */}
                     {addReview && (
                         <tr>
                             <td>{(reviews.length + 1)}</td>
@@ -151,11 +177,10 @@ const Reviews = ({ propertyId }) => {
                             </td>
                             <td>
                                 <select id="rating-select" value={newRating} onChange={e => setNewRating(e.target.value)}>
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                    <option value="5">5</option>
+                                    <option value="">--Odaberi ocjenu--</option>
+                                    {ratings.map(rating => (
+                                        <option key={rating.ocjena_id} value={rating.ocjena_id}>{rating.ocjena}</option>
+                                    ))}
                                 </select>
                             </td>
                             <td>
