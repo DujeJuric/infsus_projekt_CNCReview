@@ -51,7 +51,7 @@ def get_objekt_with_details(objekt_id, db: Session = None):
 
 @router.get("/getObjektById/{id}")
 async def get_objekt_by_id(id: int, db: db_dependency):
-    objekt = get_objekt_with_details(id)
+    objekt = get_objekt_with_details(id, db)
     if not objekt:
         raise HTTPException(status_code=404, detail="Objekt not found")
     return objekt
